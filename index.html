@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El Lobo Que No Fue</title>
+<style>
+  :root {
+    --bg: #07060a;
+    --ink: #f2ead8;
+    --ink-dim: #b8ad97;
+    --rojo: #c2272d;
+    --rojo-claro: #e0484d;
+    --oro: #d9b26f;
+    --panel: rgba(12, 10, 14, .78);
+    --borde: rgba(242, 234, 216, .18);
+    --serif: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--sans); overflow: hidden; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+
+  #escenario { position: fixed; inset: 0; display: grid; place-items: center; background: #000; }
+  .clip { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000;
+          opacity: 0; transition: filter .6s ease, opacity .12s linear; }
+  .clip.visible { opacity: 1; }
+  .clip.congelado { filter: blur(9px) brightness(.55) saturate(.8); }
+
+  /* ---------- portada ---------- */
+  #portada { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center;
+             text-align: center; padding: 24px 16px; background: #000 center/cover no-repeat; }
+  #portada::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(0,0,0,.35), rgba(0,0,0,.88) 75%); }
+  #portada > * { position: relative; }
+  .sobretitulo { letter-spacing: .32em; text-transform: uppercase; font-size: 12px; color: var(--oro); margin: 0 0 14px; }
+  h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(38px, 8vw, 84px); line-height: 1; margin: 0; text-shadow: 0 2px 30px rgba(0,0,0,.8); }
+  h1 em { font-style: italic; color: var(--rojo-claro); }
+  .bajada { max-width: 520px; color: var(--ink-dim); font-family: var(--serif); font-size: clamp(15px, 2.2vw, 18px); line-height: 1.5; margin: 18px 0 30px; }
+  .boton { border: 1px solid var(--borde); background: rgba(242,234,216,.06); padding: 13px 26px; border-radius: 999px;
+           font-size: 15px; letter-spacing: .04em; transition: background .2s, border-color .2s, transform .2s; }
+  .boton:hover, .boton:focus-visible { background: rgba(242,234,216,.14); border-color: rgba(242,234,216,.45); outline: none; }
+  .boton.principal { background: var(--rojo); border-color: var(--rojo); font-weight: 600; padding: 15px 34px; }
+  .boton.principal:hover, .boton.principal:focus-visible { background: var(--rojo-claro); border-color: var(--rojo-claro); transform: translateY(-1px); }
+  .fila-botones { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .nota { margin-top: 26px; font-size: 12px; color: var(--ink-dim); opacity: .8; }
+  .nota kbd { border: 1px solid var(--borde); border-radius: 4px; padding: 1px 6px; font-family: var(--sans); font-size: 11px; }
+
+  /* ---------- rótulos ---------- */
+  #rotulo { position: fixed; left: 0; right: 0; bottom: 16%; z-index: 10; text-align: center; pointer-events: none;
+            font-family: var(--serif); font-style: italic; font-size: clamp(22px, 4.4vw, 46px); text-shadow: 0 2px 18px #000, 0 0 4px #000;
+            opacity: 0; transition: opacity 1s ease; padding: 0 16px; }
+  #rotulo.visible { opacity: 1; }
+  #capitulo { position: fixed; top: 22px; left: 24px; z-index: 10; pointer-events: none; font-size: 12px; letter-spacing: .28em;
+              text-transform: uppercase; color: var(--ink); opacity: 0; transition: opacity .8s ease; text-shadow: 0 1px 8px #000; }
+  #capitulo.visible { opacity: .85; }
+  #capitulo b { display: block; font-family: var(--serif); font-weight: 400; letter-spacing: .02em; text-transform: none; font-size: 20px; margin-top: 4px; }
+
+  /* ---------- decisión ---------- */
+  #decision { position: fixed; inset: 0; z-index: 20; display: none; flex-direction: column; align-items: center; justify-content: center;
+              padding: 24px 16px; text-align: center; }
+  #decision.visible { display: flex; animation: aparecer .5s ease both; }
+  @keyframes aparecer { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .quien { font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: var(--oro); margin: 0 0 8px; }
+  .pregunta { font-family: var(--serif); font-size: clamp(22px, 3.6vw, 36px); margin: 0 0 26px; max-width: 760px; text-shadow: 0 2px 14px #000; }
+  .opciones { display: grid; grid-template-columns: repeat(2, minmax(0, 340px)); gap: 16px; width: 100%; justify-content: center; }
+  .opcion { position: relative; text-align: left; border: 1px solid var(--borde); background: var(--panel); backdrop-filter: blur(6px);
+            border-radius: 14px; padding: 18px 20px 18px 62px; min-height: 96px; font-size: 16px; line-height: 1.4;
+            transition: border-color .2s, background .2s, transform .2s; }
+  .opcion:hover, .opcion:focus-visible { border-color: var(--rojo-claro); background: rgba(40, 12, 14, .85); transform: translateY(-2px); outline: none; }
+  .opcion .letra { position: absolute; left: 18px; top: 18px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+                   border: 1px solid var(--rojo-claro); color: var(--rojo-claro); font-weight: 700; font-size: 14px; }
+  .reloj { margin-top: 26px; position: relative; width: 54px; height: 54px; }
+  .reloj svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .reloj circle { fill: none; stroke-width: 3; }
+  .reloj .pista { stroke: rgba(242,234,216,.15); }
+  .reloj .avance { stroke: var(--ink); stroke-linecap: round; stroke-dasharray: 150.8; transition: stroke-dashoffset .25s linear; }
+  .reloj span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 15px; font-variant-numeric: tabular-nums; }
+  .espera { margin-top: 10px; font-size: 12px; color: var(--ink-dim); min-height: 1em; }
+
+  /* ---------- final ---------- */
+  #final { position: fixed; inset: 0; z-index: 25; display: none; flex-direction: column; align-items: center; justify-content: center;
+           text-align: center; padding: 24px 16px; background: rgba(0,0,0,.82); }
+  #final.visible { display: flex; animation: aparecer 1.2s ease both; }
+  #final .etiqueta { font-size: 13px; letter-spacing: .38em; text-transform: uppercase; color: var(--rojo-claro); margin: 0 0 10px; }
+  #final h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(30px, 6vw, 60px); margin: 0 0 18px; }
+  #final .ruta { color: var(--ink-dim); font-size: 13px; margin: 0 0 8px; }
+  #final .contador { color: var(--oro); font-size: 13px; margin: 0 0 28px; }
+
+  /* ---------- mapa ---------- */
+  #mapa { position: fixed; inset: 0; z-index: 40; display: none; background: #050407; overflow-y: auto; padding: 28px 16px 40px; }
+  #mapa.visible { display: block; animation: aparecer .4s ease both; }
+  .mapa-cab { max-width: 760px; margin: 0 auto 22px; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+  .mapa-cab h2 { font-family: var(--serif); font-weight: 400; font-size: 30px; margin: 0; }
+  .mapa-cab p { margin: 6px 0 0; color: var(--ink-dim); font-size: 14px; }
+  .arbol { max-width: 760px; margin: 0 auto; position: relative; padding-left: 26px; }
+  .arbol::before { content: ""; position: absolute; left: 9px; top: 12px; bottom: 30px; width: 2px; background: linear-gradient(var(--borde), var(--rojo) 60%, var(--borde)); }
+  .nodo { position: relative; margin: 0 0 14px; }
+  .nodo::before { content: ""; position: absolute; left: -22px; top: 13px; width: 10px; height: 10px; border-radius: 50%; background: var(--bg); border: 2px solid var(--ink-dim); }
+  .nodo.dec::before { background: var(--rojo); border-color: var(--rojo); transform: rotate(45deg); border-radius: 2px; }
+  .escena { font-size: 14px; color: var(--ink-dim); padding: 8px 0; }
+  .escena b { color: var(--ink); font-weight: 600; }
+  .dec-caja { border: 1px solid var(--borde); border-radius: 12px; padding: 14px 16px; background: rgba(242,234,216,.03); }
+  .dec-caja .quien { margin-bottom: 4px; font-size: 11px; }
+  .dec-caja .titulo { font-family: var(--serif); font-size: 18px; margin: 0 0 10px; }
+  .ramas { display: grid; gap: 8px; }
+  .rama { display: flex; gap: 10px; align-items: baseline; font-size: 14px; color: var(--ink-dim); line-height: 1.4; }
+  .rama .letra { flex: none; font-weight: 700; color: var(--rojo-claro); }
+  .rama .destino { color: var(--ink); white-space: nowrap; }
+  .chip-final { display: inline-block; border-radius: 999px; padding: 1px 9px; font-size: 12px; border: 1px solid var(--borde); color: var(--ink-dim); margin-left: 4px; }
+  .chip-final.visto { border-color: var(--oro); color: var(--oro); }
+  .dec-caja .ir { margin-top: 12px; font-size: 13px; padding: 8px 16px; }
+  .finales { max-width: 760px; margin: 26px auto 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .tarjeta { border: 1px solid var(--borde); border-radius: 12px; padding: 12px; background: rgba(242,234,216,.03); text-align: left; }
+  .tarjeta.visto { border-color: rgba(217,178,111,.6); }
+  .tarjeta small { display: block; font-size: 11px; letter-spacing: .2em; color: var(--rojo-claro); }
+  .tarjeta span { display: block; font-family: var(--serif); font-size: 15px; margin-top: 4px; }
+  .tarjeta em { display: block; font-style: normal; font-size: 12px; color: var(--ink-dim); margin-top: 6px; }
+  .tarjeta:disabled { cursor: default; opacity: .55; }
+
+  /* ---------- controles ---------- */
+  #controles { position: fixed; right: 16px; top: 16px; z-index: 15; display: flex; gap: 8px; opacity: 0; transition: opacity .4s; }
+  body.activo #controles, #controles:focus-within { opacity: 1; }
+  .ctrl { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--borde); background: var(--panel); display: grid; place-items: center; }
+  .ctrl:hover, .ctrl:focus-visible { border-color: rgba(242,234,216,.5); outline: none; }
+  .ctrl svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  #pausa-aviso { position: fixed; inset: 0; z-index: 12; display: none; place-items: center; background: rgba(0,0,0,.35); pointer-events: none;
+                 font-size: 13px; letter-spacing: .3em; text-transform: uppercase; }
+  #pausa-aviso.visible { display: grid; }
+
+  @media (max-width: 640px) {
+    .opciones { grid-template-columns: 1fr; max-width: 420px; }
+    .opcion { min-height: 0; }
+    #capitulo { top: 14px; left: 16px; }
+    #capitulo b { font-size: 16px; }
+    #controles { right: 10px; top: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div id="escenario">
+  <video class="clip" id="v0" playsinline preload="auto"></video>
+  <video class="clip" id="v1" playsinline preload="auto"></video>
+</div>
+
+<div id="capitulo"></div>
+<div id="rotulo"></div>
+<div id="pausa-aviso">En pausa</div>
+
+<section id="portada" style="background-image:url('media/portada.jpg')">
+  <p class="sobretitulo">Audiovisual interactivo · a partir de Perrault</p>
+  <h1>El Lobo <em>Que No Fue</em></h1>
+  <p class="bajada">Cuatro decisiones. Cinco finales. Tú eliges qué hacen Caperucita y el lobo, y el cuento cambia de rumbo.</p>
+  <div class="fila-botones">
+    <button class="boton principal" id="btn-comenzar">Comenzar</button>
+    <button class="boton" id="btn-mapa-portada">Mapa de finales</button>
+  </div>
+  <p class="nota">Mejor con sonido y en pantalla completa · <kbd>A</kbd> <kbd>B</kbd> para decidir · <kbd>Espacio</kbd> pausa · <kbd>F</kbd> pantalla completa · <kbd>M</kbd> mapa</p>
+</section>
+
+<section id="decision" aria-live="polite">
+  <p class="quien" id="dec-quien"></p>
+  <p class="pregunta" id="dec-pregunta"></p>
+  <div class="opciones">
+    <button class="opcion" data-op="A"><span class="letra">A</span><span id="dec-a"></span></button>
+    <button class="opcion" data-op="B"><span class="letra">B</span><span id="dec-b"></span></button>
+  </div>
+  <div class="reloj" aria-hidden="true">
+    <svg viewBox="0 0 54 54"><circle class="pista" cx="27" cy="27" r="24"/><circle class="avance" id="reloj-avance" cx="27" cy="27" r="24"/></svg>
+    <span id="reloj-num">10</span>
+  </div>
+  <p class="espera" id="dec-espera"></p>
+</section>
+
+<section id="final">
+  <p class="etiqueta" id="fin-etiqueta"></p>
+  <h2 id="fin-titulo"></h2>
+  <p class="ruta" id="fin-ruta"></p>
+  <p class="contador" id="fin-contador"></p>
+  <div class="fila-botones">
+    <button class="boton principal" id="btn-volver">Volver a decidir</button>
+    <button class="boton" id="btn-mapa-final">Ver mapa de finales</button>
+    <button class="boton" id="btn-reiniciar-final">Empezar de nuevo</button>
+  </div>
+</section>
+
+<section id="mapa" aria-label="Mapa de finales">
+  <div class="mapa-cab">
+    <div>
+      <h2>Mapa de finales</h2>
+      <p id="mapa-resumen"></p>
+    </div>
+    <button class="ctrl" id="btn-cerrar-mapa" aria-label="Cerrar mapa">
+      <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="arbol" id="arbol"></div>
+  <div class="finales" id="tarjetas"></div>
+</section>
+
+<div id="controles">
+  <button class="ctrl" id="btn-pausa" aria-label="Pausa"><svg viewBox="0 0 24 24"><path id="ico-pausa" d="M8 5v14M16 5v14"/></svg></button>
+  <button class="ctrl" id="btn-mapa" aria-label="Mapa de finales"><svg viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg></button>
+  <button class="ctrl" id="btn-reiniciar" aria-label="Empezar de nuevo"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4"/></svg></button>
+  <button class="ctrl" id="btn-pantalla" aria-label="Pantalla completa"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+</div>
+
+<script>
+/* =====================================================================
+   ESTRUCTURA DE LA HISTORIA  (de lobonofue_guiontecnico.md)
+   Orden: E1 (presente) → E7 (origen) → D4 → E6 → D3 → E5 → E4 → D2 → E3 → E2 → D1
+   ===================================================================== */
+const c = (esc, ...cs) => cs.map(x => `media/${esc}/${x}_${esc}.mp4`);
+
+const NODOS = {
+  E1: { capitulo: ["Escena 1", "El presente"], clips: c("E1", "C1", "C2", "C3", "C4", "C5"), sigue: "E7",
+        rotulo: { clip: 4, desde: 1.2, texto: "¿Y si pudiera cambiarse?" } },
+  E7: { capitulo: ["Escena 7", "El origen"], clips: c("E7", "C1", "C2", "C3", "C4", "C5"), sigue: "D4" },
+  D4: { decision: true, quien: "Decide Caperucita", pregunta: "El lobo le pregunta a dónde va. A lo lejos, suenan las hachas.",
+        audio: "media/DECISIONES/D4_E7_bucle.mp3",
+        A: { texto: "Se detiene y le responde al lobo.", clips: c("E7", "C7A", "C8A"), sigue: "E6", destino: "Escena 6" },
+        B: { texto: "Finge no oírlo y se apresura hacia el sonido de las hachas.", clips: [], sigue: "FE", destino: "Final E" } },
+  E6: { capitulo: ["Escena 6", "El cruce de caminos"], clips: c("E6", "C1", "C2", "C3", "C4", "C5"), sigue: "D3" },
+  D3: { decision: true, quien: "Decide el lobo", pregunta: "Dos senderos: uno corto, otro largo. El lobo ya tiene un plan.",
+        audio: "media/DECISIONES/D3_E6_bucle.mp3",
+        A: { texto: "Propone la carrera y corre por el camino corto.", clips: c("E6", "C7A", "C8A"), sigue: "E5", destino: "Escena 5" },
+        B: { texto: "Calla, deja pasar la oportunidad y sigue su propio rumbo.", clips: [], sigue: "FD", destino: "Final D" } },
+  E5: { capitulo: ["Escena 5", "La abuela"], clips: c("E5", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8"), sigue: "E4" },
+  E4: { capitulo: ["Escena 4", "La puerta"], clips: c("E4", "C1", "C2", "C3", "C4", "C5"), sigue: "D2" },
+  D2: { decision: true, quien: "Decide Caperucita", pregunta: "La voz de adentro no suena como la de su abuela.",
+        audio: "media/DECISIONES/D2_E4_bucle.mp3",
+        A: { texto: "Piensa que su abuela solo está resfriada y entra.", clips: c("E4", "C7A"), sigue: "E3", destino: "Escena 3" },
+        B: { texto: "La voz ronca la asusta de verdad: retrocede y corre al bosque.", clips: [], sigue: "FC", destino: "Final C" } },
+  E3: { capitulo: ["Escena 3", "Las preguntas"], clips: c("E3", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9"), sigue: "E2" },
+  E2: { capitulo: ["Escena 2", "La cama"], clips: c("E2", "C1", "C2", "C3", "C4"), sigue: "D1" },
+  D1: { decision: true, quien: "Decide el lobo", pregunta: "—Abuela, ¡qué dientes tan grandes tiene! El lobo no contesta enseguida.",
+        audio: "media/DECISIONES/D1_E2_bucle.mp3",
+        A: { texto: "Responde y se abalanza sobre ella.", clips: [], sigue: "FA", destino: "Final A" },
+        B: { texto: "Duda y, en vez de responder, se aparta hacia la pared.", clips: [], sigue: "FB", destino: "Final B" } },
+  FA: { final: "A", titulo: "El final clásico", clips: c("FA", "C1", "C2", "C3", "C4") },
+  FB: { final: "B", titulo: "La duda", clips: c("FB", "C1", "C2", "C3", "C4", "C5", "C6") },
+  FC: { final: "C", titulo: "La huida en la puerta", clips: c("FC", "C1", "C2", "C3", "C4", "C5") },
+  FD: { final: "D", titulo: "El camino que no se tomó", clips: c("FD", "C1", "C2", "C3", "C4", "C5") },
+  FE: { final: "E", titulo: "Los leñadores", clips: c("FE", "C1", "C2", "C3", "C4", "C5", "C6") },
+};
+const ORDEN_DECISIONES = ["D4", "D3", "D2", "D1"];
+const SEG_DECIDIR = 10;
+
+/* ---------------- estado ---------------- */
+const $ = id => document.getElementById(id);
+const videos = [$("v0"), $("v1")];
+let activo = 0;            // índice del video visible
+let cola = [];             // clips pendientes del tramo actual
+let alTerminar = null;     // qué hacer al acabar la cola
+let nodoActual = null;
+let ruta = [];             // [{dec:"D4", op:"A"}...]
+let decisionActual = null;
+let temporizador = null;
+let audioDecision = new Audio();
+audioDecision.loop = true;
+let pausado = false;
+
+const vistos = (() => { try { return new Set(JSON.parse(localStorage.getItem("lobo_finales") || "[]")); } catch { return new Set(); } })();
+function guardarVistos() { try { localStorage.setItem("lobo_finales", JSON.stringify([...vistos])); } catch {} }
+
+/* ---------------- reproducción encadenada (dos videos para que no haya cortes) ---------------- */
+function precargar(el, src) {
+  if (el.dataset.src === src) return;
+  el.dataset.src = src;
+  el.src = src;
+  el.load();
+}
+
+function reproducirCola(clips, despues, rotulo) {
+  cola = clips.slice();
+  alTerminar = despues;
+  rotuloPendiente = rotulo || null;
+  indiceEnCola = -1;
+  siguienteClip(true);
+}
+
+let indiceEnCola = -1;
+let rotuloPendiente = null;
+
+function siguienteClip(primero) {
+  if (!cola.length) { const f = alTerminar; alTerminar = null; if (f) f(); return; }
+  const src = cola.shift();
+  indiceEnCola++;
+  const actual = videos[activo];
+  const otro = videos[1 - activo];
+  let el;
+  if (!primero && otro.dataset.src === src) { el = otro; activo = 1 - activo; }
+  else if (actual.dataset.src === src && primero) { el = actual; }
+  else { el = otro; activo = 1 - activo; precargar(el, src); }
+
+  el.classList.remove("congelado");
+  el.muted = false; el.loop = false;
+  el.currentTime = 0;
+  const p = el.play();
+  if (p) p.catch(() => {});
+  el.classList.add("visible");
+  videos[1 - activo].classList.remove("visible");
+  videos[1 - activo].pause();
+
+  // rótulo sobre un clip concreto (p. ej. "¿Y si pudiera cambiarse?")
+  $("rotulo").classList.remove("visible");
+  if (rotuloPendiente && rotuloPendiente.clip === indiceEnCola) {
+    const r = rotuloPendiente;
+    const mostrar = () => { if (el.currentTime >= r.desde) { $("rotulo").textContent = r.texto; $("rotulo").classList.add("visible"); el.removeEventListener("timeupdate", mostrar); } };
+    el.addEventListener("timeupdate", mostrar);
+  }
+
+  // precargar el siguiente en el video oculto
+  if (cola.length) precargar(videos[1 - activo], cola[0]);
+}
+
+videos.forEach((el, i) => el.addEventListener("ended", () => {
+  if (i !== activo || el.loop || decisionActual) return;
+  siguienteClip(false);
+}));
+
+/* ---------------- nodos ---------------- */
+function irA(id) {
+  nodoActual = id;
+  const n = NODOS[id];
+  ocultarCapas();
+  if (n.decision) return mostrarDecision(id);
+  if (n.capitulo) mostrarCapitulo(n.capitulo);
+  const despues = n.final ? () => mostrarFinal(id) : () => irA(n.sigue);
+  reproducirCola(n.clips, despues, n.rotulo);
+}
+
+function mostrarCapitulo([num, nombre]) {
+  const el = $("capitulo");
+  el.innerHTML = `${num}<b>${nombre}</b>`;
+  el.classList.add("visible");
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove("visible"), 3200);
+}
+
+function ocultarCapas() {
+  ["decision", "final", "rotulo"].forEach(x => $(x).classList.remove("visible"));
+  detenerDecision();
+}
+
+/* ---------------- decisiones ---------------- */
+function mostrarDecision(id, desdeMapa) {
+  const d = NODOS[id];
+  decisionActual = id;
+  cola = []; alTerminar = null;   // nada pendiente del tramo anterior
+  // si llegamos desde el mapa o "volver a decidir", cargamos el último plano de la escena previa
+  const previa = Object.values(NODOS).find(n => n.sigue === id);
+  const ultimo = previa.clips[previa.clips.length - 1];
+  const el = videos[activo];
+  if (desdeMapa || el.dataset.src !== ultimo) {
+    el.loop = false; el.muted = false; el.pause();
+    const alFinal = () => { el.pause(); if (el.duration) el.currentTime = Math.max(0, el.duration - 0.05); };
+    if (el.dataset.src === ultimo && el.readyState >= 1) alFinal();
+    else {
+      precargar(el, ultimo);
+      el.addEventListener("loadedmetadata", alFinal, { once: true });
+      el.addEventListener("loadeddata", alFinal, { once: true });
+    }
+    videos[1 - activo].classList.remove("visible");
+    videos[1 - activo].pause();
+  }
+  el.classList.add("visible", "congelado");
+  el.pause();
+
+  $("dec-quien").textContent = d.quien;
+  $("dec-pregunta").textContent = d.pregunta;
+  $("dec-a").textContent = d.A.texto;
+  $("dec-b").textContent = d.B.texto;
+  $("dec-espera").textContent = "";
+  $("decision").classList.add("visible");
+  setTimeout(() => document.querySelector('.opcion[data-op="A"]').focus({ preventScroll: true }), 50);
+
+  audioDecision.src = d.audio;
+  audioDecision.volume = 1;
+  audioDecision.currentTime = 0;
+  audioDecision.play().catch(() => {});
+
+  // precarga de la primera toma de cada opción
+  const a0 = d.A.clips[0] || NODOS[d.A.sigue].clips[0];
+  precargar(videos[1 - activo], a0);
+
+  let restante = SEG_DECIDIR;
+  let previo = performance.now();
+  pintarReloj(restante);
+  clearInterval(temporizador);
+  temporizador = setInterval(() => {
+    const ahora = performance.now();
+    const paso = (ahora - previo) / 1000;
+    previo = ahora;
+    if (pausado) return;
+    restante -= paso;
+    pintarReloj(Math.max(0, restante));
+    if (restante <= 0) {
+      clearInterval(temporizador);
+      // nadie eligió: el plano final se repite en bucle hasta que se elija
+      $("dec-espera").textContent = "Esperando tu decisión…";
+      el.loop = true; el.muted = true; el.currentTime = 0; el.play().catch(() => {});
+    }
+  }, 250);
+}
+
+function pintarReloj(seg) {
+  $("reloj-num").textContent = Math.ceil(seg);
+  $("reloj-avance").style.strokeDashoffset = 150.8 * (1 - seg / SEG_DECIDIR);
+}
+
+function detenerDecision() {
+  clearInterval(temporizador);
+  if (!audioDecision.paused) {
+    const a = audioDecision;
+    const paso = setInterval(() => { a.volume = Math.max(0, a.volume - 0.15); if (a.volume <= 0.01) { a.pause(); clearInterval(paso); } }, 40);
+  }
+}
+
+function elegir(op) {
+  if (!decisionActual) return;
+  const id = decisionActual, d = NODOS[id], o = d[op];
+  decisionActual = null;
+  // si se vuelve a decidir, la ruta se corta en esta decisión
+  const i = ruta.findIndex(r => r.dec === id);
+  if (i >= 0) ruta = ruta.slice(0, i);
+  ruta.push({ dec: id, op });
+  videos.forEach(v => { v.loop = false; v.muted = false; v.classList.remove("congelado"); });
+  ocultarCapas();
+  const sigue = () => irA(o.sigue);
+  if (o.clips.length) reproducirCola(o.clips, sigue);
+  else sigue();
+}
+
+document.querySelectorAll(".opcion").forEach(b => b.addEventListener("click", () => elegir(b.dataset.op)));
+
+/* ---------------- finales ---------------- */
+function mostrarFinal(id) {
+  const n = NODOS[id];
+  vistos.add(n.final); guardarVistos();
+  $("fin-etiqueta").textContent = `Final ${n.final}`;
+  $("fin-titulo").textContent = n.titulo;
+  $("fin-ruta").textContent = "Tu camino: " + ruta.map(r => `${r.dec}-${r.op}`).join("  →  ");
+  $("fin-contador").textContent = `Has descubierto ${vistos.size} de 5 finales`;
+  $("final").classList.add("visible");
+  $("btn-volver").focus({ preventScroll: true });
+}
+
+function volverADecidir() {
+  const ultima = ruta.length ? ruta[ruta.length - 1].dec : "D4";
+  ocultarCapas();
+  mostrarDecision(ultima, true);
+}
+
+/* ---------------- mapa ---------------- */
+function abrirMapa() {
+  if ($("portada").hidden) pausarTodo(true);
+  const esc = (txt) => `<div class="nodo"><div class="escena">${txt}</div></div>`;
+  const chip = (fin) => `<span class="chip-final ${vistos.has(fin) ? "visto" : ""}">${vistos.has(fin) ? "visto" : "sin ver"}</span>`;
+  const dec = (id) => {
+    const d = NODOS[id];
+    const rama = (op) => {
+      const o = d[op];
+      const fin = NODOS[o.sigue].final;
+      return `<div class="rama"><span class="letra">${op}</span><span>${o.texto} → <span class="destino">${o.destino}</span>${fin ? chip(fin) : ""}</span></div>`;
+    };
+    return `<div class="nodo dec"><div class="dec-caja"><p class="quien">${id} · ${d.quien}</p><p class="titulo">${d.pregunta}</p>
+            <div class="ramas">${rama("A")}${rama("B")}</div>
+            <button class="boton ir" data-ir="${id}">Ir a esta decisión</button></div></div>`;
+  };
+  $("arbol").innerHTML =
+    esc("<b>Escena 1</b> · El presente — el lobo despierto en la cama de la abuela") +
+    esc("<b>Escena 7</b> · El origen — el bosque, Caperucita y las hachas") + dec("D4") +
+    esc("<b>Escena 6</b> · El cruce de caminos") + dec("D3") +
+    esc("<b>Escena 5</b> · La abuela &nbsp;→&nbsp; <b>Escena 4</b> · La puerta") + dec("D2") +
+    esc("<b>Escena 3</b> · Las preguntas &nbsp;→&nbsp; <b>Escena 2</b> · La cama") + dec("D1");
+  $("tarjetas").innerHTML = ["FA", "FB", "FC", "FD", "FE"].map(id => {
+    const n = NODOS[id], v = vistos.has(n.final);
+    return `<button class="tarjeta ${v ? "visto" : ""}" data-fin="${id}" ${v ? "" : "disabled"}>
+              <small>FINAL ${n.final}</small><span>${v ? n.titulo : "???"}</span><em>${v ? "Ver de nuevo" : "Aún sin descubrir"}</em></button>`;
+  }).join("");
+  $("mapa-resumen").textContent = `Has descubierto ${vistos.size} de 5 finales. Puedes saltar a cualquier decisión para tomar otro camino.`;
+  $("mapa").classList.add("visible");
+  $("btn-cerrar-mapa").focus({ preventScroll: true });
+}
+
+function cerrarMapa() {
+  $("mapa").classList.remove("visible");
+  if (!$("portada").hidden) return;
+  pausarTodo(false);
+}
+
+$("arbol").addEventListener("click", e => {
+  const b = e.target.closest("[data-ir]"); if (!b) return;
+  $("mapa").classList.remove("visible");
+  empezarSiHaceFalta();
+  pausado = false; $("pausa-aviso").classList.remove("visible");
+  const id = b.dataset.ir;
+  const i = ORDEN_DECISIONES.indexOf(id);
+  // reconstruye la ruta mínima para llegar a esa decisión (todas las anteriores en A)
+  ruta = ORDEN_DECISIONES.slice(0, i).map(d => ({ dec: d, op: "A" }));
+  ocultarCapas();
+  nodoActual = id;
+  mostrarDecision(id, true);
+});
+$("tarjetas").addEventListener("click", e => {
+  const b = e.target.closest("[data-fin]"); if (!b || b.disabled) return;
+  $("mapa").classList.remove("visible");
+  empezarSiHaceFalta();
+  pausado = false; $("pausa-aviso").classList.remove("visible");
+  irA(b.dataset.fin);
+});
+
+/* ---------------- controles ---------------- */
+function pausarTodo(p) {
+  pausado = p;
+  const el = videos[activo];
+  if (p) { el.pause(); audioDecision.pause(); }
+  else {
+    if (decisionActual) { if (el.loop) el.play().catch(() => {}); audioDecision.play().catch(() => {}); }
+    else if ($("final").classList.contains("visible")) {}
+    else el.play().catch(() => {});
+  }
+  $("pausa-aviso").classList.toggle("visible", p && !$("mapa").classList.contains("visible"));
+  $("ico-pausa").setAttribute("d", p ? "M8 5l11 7-11 7z" : "M8 5v14M16 5v14");
+}
+
+function empezar() {
+  $("portada").hidden = true;
+  $("portada").style.display = "none";
+  ruta = [];
+  irA("E1");
+}
+function empezarSiHaceFalta() {
+  if (!$("portada").hidden) { $("portada").hidden = true; $("portada").style.display = "none"; }
+}
+function reiniciar() {
+  $("mapa").classList.remove("visible");
+  pausado = false; $("pausa-aviso").classList.remove("visible");
+  $("ico-pausa").setAttribute("d", "M8 5v14M16 5v14");
+  empezarSiHaceFalta();
+  ruta = [];
+  irA("E1");
+}
+function pantallaCompleta() {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen().catch(() => {});
+}
+
+$("btn-comenzar").addEventListener("click", empezar);
+$("btn-mapa-portada").addEventListener("click", abrirMapa);
+$("btn-mapa").addEventListener("click", abrirMapa);
+$("btn-mapa-final").addEventListener("click", abrirMapa);
+$("btn-cerrar-mapa").addEventListener("click", cerrarMapa);
+$("btn-volver").addEventListener("click", volverADecidir);
+$("btn-reiniciar").addEventListener("click", reiniciar);
+$("btn-reiniciar-final").addEventListener("click", reiniciar);
+$("btn-pantalla").addEventListener("click", pantallaCompleta);
+$("btn-pausa").addEventListener("click", () => { if (!$("portada").hidden) return; pausarTodo(!pausado); });
+
+document.addEventListener("keydown", e => {
+  const k = e.key.toLowerCase();
+  if (k === "escape" && $("mapa").classList.contains("visible")) return cerrarMapa();
+  if (!$("portada").hidden) { if (k === "enter") empezar(); if (k === "m") abrirMapa(); return; }
+  if ((k === "a" || k === "b") && decisionActual) return elegir(k.toUpperCase());
+  if (k === " " && !e.target.closest("button")) { e.preventDefault(); pausarTodo(!pausado); }
+  if (k === "f") pantallaCompleta();
+  if (k === "m") $("mapa").classList.contains("visible") ? cerrarMapa() : abrirMapa();
+});
+
+// controles visibles al mover el ratón
+let quieto;
+document.addEventListener("pointermove", () => {
+  document.body.classList.add("activo");
+  clearTimeout(quieto);
+  quieto = setTimeout(() => document.body.classList.remove("activo"), 2200);
+});
+
+// precarga del primer clip para que arranque al instante
+precargar(videos[0], NODOS.E1.clips[0]);
+</script>
+</body>
+</html>
