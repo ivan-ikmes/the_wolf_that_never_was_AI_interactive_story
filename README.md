@@ -5,12 +5,6 @@ Productor: Iván Ochoa.
 
 Cuatro decisiones, cinco finales. El cuento empieza por el final, con el lobo despierto en la cama de la abuela, y luego "rebobina" al bosque. Desde ahí, quien lo ve decide qué hacen Caperucita y el lobo.
 
-## Cómo verlo
-
-1. Copia la carpeta completa: `index.html` necesita la carpeta `media/` a su lado.
-2. Abre `index.html` con doble clic en Chrome, Edge o Firefox.
-3. No necesita internet ni instalar nada.
-
 **Controles:** `A` / `B` para decidir · `Espacio` pausa · `F` pantalla completa · `M` mapa de finales.
 
 ## Estructura
